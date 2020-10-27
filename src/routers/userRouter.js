@@ -51,8 +51,6 @@ router.get('/users/me', auth, async (req, res) => {
 })
 
 router.patch('/users/me', auth, async (req, res) => {
-
-    const _id = req.user._id
     const allowedUpdates = ['name', 'email', 'password', 'age']
     const updates = Object.keys(req.body)
 

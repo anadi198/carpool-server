@@ -12,6 +12,7 @@ router.get('/routes/me', auth, async (req, res) => {
     }
 })
 
+//GET /routes?from=Kolkata&timeFrom=01:30pm&timeTo=02:30pm
 //GET /routes?from=Kolkata&to=Mumbai
 //GET /routes?from=Kolkata
 //GET /routes?to=Mumbai
@@ -25,6 +26,12 @@ router.get('/routes', auth, async (req, res) => {
     }
     if (req.query.to) {
         query.destination = req.query.to
+    }
+    if (req.query.timeFrom) {
+        query.time_slot_from = req.query.timeFrom
+    }
+    if (req.query.timeTo) {
+        query.time_slot_to = req.query.timeTo
     }
     try {
         const routes = await Route.find(query).sort({ updatedAt: -1 }).skip(page * limit).limit(limit).exec()

@@ -1,15 +1,15 @@
 const mongoose = require('mongoose')
 
 const ratingSchema = mongoose.Schema({
+    createdAt: Number,
+    updatedAt: Number,
     fromID: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        trim: true
+        required: true
     },
     toID: {
-        type: String,
-        required: true,
-        trim: true
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
     },
     rating: {
         type: Number,
@@ -25,7 +25,7 @@ const ratingSchema = mongoose.Schema({
         default: 'No comment given.'
     }
 }, {
-    timestamps: true
+    timestamps: { currentTime: () => Math.floor(Date.now() / 1000) }
 })
 
 const Rating = mongoose.model('Rating', ratingSchema)

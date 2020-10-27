@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken')
 const Route = require('./route')
 
 const userSchema = mongoose.Schema({
+    createdAt: Number,
+    updatedAt: Number,
     name: {
         type: String,
         required: true,
@@ -66,14 +68,16 @@ const userSchema = mongoose.Schema({
     },
     rating: {
         type: Number,
+        required: true,
         default: 0
     },
     totalRatings: {
         type: Number,
+        required: true,
         default: 0
     }
 }, {
-    timestamps: true
+    timestamps: { currentTime: () => Math.floor(Date.now() / 1000) }
 })
 
 const secret = process.env.SECRET_JWT

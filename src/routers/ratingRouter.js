@@ -61,9 +61,55 @@ router.get('/ratings/:id', auth, async (req, res) => {
     }
 })
 
+router.patch('/ratings/:id', auth, async (req, res) => {
+    const _id = req.params.id
+    const allowedUpdates = ['rating', 'comment']
+    const updates = Object.keys(req.body)
+
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
+    if (!isValidOperation) {
+        return res.status(400).send({ error: 'Invalid updates!' })
+    }
+    try {
+        const rating = await Rating.findOne({ 
+            _id,
+            fromID: req.user._id
+        })
+        if (!rating) {
+            return res.status(404).send()
+        }
+
+
+        const user = await User.findById({ _id: rating.toID })
+        let userRating = user.rating
+        let totalRatings = user.totalRatings
+        let sumRatings = userRating * totalRatings - rating.rating
+        user.rating = sumRatings * 1.0 / (totalRatings - 1)
+        user.totalRatings = totalRatings - 1
+
+        updates.forEach((update) => rating[update] = req.body[update])
+
+        userRating = user.rating
+        totalRatings = user.totalRatings
+        sumRatings = userRating * totalRatings + rating.rating
+        user.rating = sumRatings * 1.0 / (totalRatings + 1)
+        user.totalRatings = totalRatings + 1
+
+        await rating.save()
+        await user.save()
+        res.send(rating)
+    } catch (e) {
+        res.status(400).send(e)
+    }
+})
+
 router.post('/ratings', auth, async (req, res) => {
     const _id = req.body.toID
-    if (!req.user._id === req.body.fromID) {
+    if (!req.user._id.equals(req.body.fromID)) {
+        return res.status(400).send()
+    }
+
+    if (req.user._id.equals(_id)) {
         return res.status(400).send()
     }
     try {
@@ -72,11 +118,11 @@ router.post('/ratings', auth, async (req, res) => {
         const userRating = user.rating || 0
         const totalRatings = user.totalRatings || 0
         const sumRatings = userRating * totalRatings + rating.rating
-        user.rating = sumRatings / (totalRatings + 1)
-        user.totalRatings = user.totalRatings + 1
+        user.rating = sumRatings * 1.0 / (totalRatings + 1)
+        user.totalRatings = totalRatings + 1
         await user.save()
         await rating.save()
-        res.send()
+        res.status(201).send(rating)
     } catch (e) {
         res.status(400).send(e)
     }
