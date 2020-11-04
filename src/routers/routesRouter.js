@@ -78,10 +78,70 @@ router.post('/routes', auth, async (req, res) => {
     }
 })
 
+
+router.post('/routes/passenger', auth, async (req, res) => {
+    try {
+        const passenger = await User.findById(req.body.passenger)
+        if (!passenger) {
+            return res.status(404).send('Passenger not found in database')
+        }
+
+        const route = await Route.findById(req.body.route)
+        if (!route) {
+            return res.status(404).send('Invalid route')
+        }
+
+        if (!route.owner === req.user._id) {
+            return res.status(401).send()
+        }
+
+        if (passenger._id === req.user._id) {
+            return res.status(400).send('Why are you trying to add yourself to your route?')
+        }
+
+        route.passengers.concat(passenger._id)
+        route.num_passengers++
+        await route.save()
+
+        res.send()
+    } catch (e) {
+        res.status(400).send()
+    }
+})
+
+router.post('/routes/advertise', auth, async (req, res) => {
+    try {
+        const advertise = req.body.advertise
+        if (!advertise) {
+            return res.status(400).send()
+        }
+
+        const route = await Route.findById(req.body.route)
+        if (!route) {
+            return res.status(404).send('Invalid route')
+        }
+
+        if (!route.owner === req.user._id) {
+            return res.status(401).send()
+        }
+
+        if (typeof advertise !== 'boolean') {
+            return res.status(400).send(`advertise field has to be of type 'boolean'`)
+        }
+
+        route.advertise = advertise
+        await route.save()
+
+        res.send()
+    } catch (e) {
+        res.status(400).send()
+    }
+})
+
 router.patch('/routes/:id', auth, async (req, res) => {
     const _id = req.params.id
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['time_slot_from', 'time_slot_to', 'source', 'destination', 'num_passengers']
+    const allowedUpdates = ['time_slot_from', 'time_slot_to', 'source', 'destination', 'num_passengers', 'passengers', 'advertise']
 
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
 
@@ -96,10 +156,23 @@ router.patch('/routes/:id', auth, async (req, res) => {
             return res.status(404).send()
         }
 
-        updates.forEach((update) => route[update] = req.body[update])
-        
+        updates.forEach((update) => {
+            if (update === 'passengers') {
+                route.passengers.concat(req.body[update])
+                route.num_passengers += req.body[update].length
+            }
+            else {
+                route[update] = req.body[update]
+            }
+        })
+
+        if (!route.passengers.length === route.num_passengers) {
+            return res.status(400).send()
+        }
+
         await route.save()
         res.send(route)
+
     } catch (e) {
         res.status(400).send(e)
     }

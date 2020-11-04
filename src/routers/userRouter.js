@@ -50,6 +50,59 @@ router.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
 })
 
+router.post('/users/addUser', auth, async (req, res) => {
+    if (req.body.id === req.user._id) {
+        return res.status(400).send(`Can't add yourself!`)
+    }
+
+    try {
+        const userAdd = await User.findById(req.body.id)
+        if (!userAdd) {
+            return res.status(404).send()
+        }
+
+        req.user.addedUsers.concat(userAdd._id)
+        await req.user.save()
+
+        res.send()
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
+//GET /users/addedUsers?limit=10&page=1
+router.get('/users/addedUsers', auth, async (req, res) => {
+    const page = parseInt(req.query.page) || 0
+    const limit = parseInt(req.query.limit) || 10
+    const query = {
+        '_id': { 
+            $in: [
+                req.user.addedUsers
+            ]
+        }
+    }
+    try {
+        const users = await User.find().where('_id').in(req.user.addedUsers).sort({ updatedAt: -1 }).skip(page * limit).limit(limit).exec()
+
+        if (!users) {
+            return res.status(404).send()
+        }
+
+        const count = await User.countDocuments(query).exec()
+
+        res.send({
+            total: count,
+            page: page,
+            pageSize: users.length,
+            limit,
+            users
+        })
+
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
 router.patch('/users/me', auth, async (req, res) => {
     const allowedUpdates = ['name', 'email', 'password', 'age']
     const updates = Object.keys(req.body)

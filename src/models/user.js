@@ -75,7 +75,10 @@ const userSchema = mongoose.Schema({
         type: Number,
         required: true,
         default: 0
-    }
+    },
+    addedUsers: [{
+        type: mongoose.Types.ObjectId
+    }]
 }, {
     timestamps: { currentTime: () => Math.floor(Date.now() / 1000) }
 })
